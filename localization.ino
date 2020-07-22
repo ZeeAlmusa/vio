@@ -3,7 +3,7 @@
 #include "odometer.h"
 #include "Controller.h"
 #include "Trajectory.h"
-
+#include "Transmission.h"
 
 bool segment_done = false;
 // ================================================================
@@ -15,7 +15,8 @@ void setup() {
   IMU::IMU_setup();
   Motors::motors_setup();
   Odometer::encoder_setup();
-
+  Transmission::transmission_setup();
+  
 }
 
 
@@ -30,7 +31,7 @@ void loop() {
   
   //segment_done = Trajectory::forward(155, Odometer::get_milage(), 300);
   
-  Odometer::print_state();
-  
+  //Odometer::print_state();
+  Transmission::relay();
 
 }

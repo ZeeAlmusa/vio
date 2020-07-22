@@ -295,10 +295,12 @@ namespace Odometer {
   
   }
 
-   void serial_write_state() {
-  
+   String string_state() {
+     
     //TODO: convert state to string and write it maybe?
-    Serial.println("Under construction");
+    String state = String(x) + "/" + String(y) + "/" + String(theta) + "/" + String(-IMU::get_yaw()/180 * PI);
+    
+    return state;
   }
 
 }
