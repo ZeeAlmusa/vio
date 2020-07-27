@@ -1,4 +1,5 @@
-
+//This module is relay the state to a stationary arduino connected PC
+//This will help plot the trajectory
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
@@ -24,10 +25,11 @@ void transmission_setup() {
 
 void relay() {
   char text[32] = {};
-  Odometer::string_state().toCharArray(text, 31);
-  Serial.println(text);
+  Odometer::string_raw().toCharArray(text, 31);
+  //Serial.println(text);
   //const char text[] = "Hello World";
-  int pot = 99;
+  
+
   radio.write(&text, sizeof(text));
   
 

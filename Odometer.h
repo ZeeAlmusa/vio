@@ -62,14 +62,20 @@ namespace Odometer {
   float y = 0;
   float theta = 0;
 
+  //IMU based heading
+  float x_IMU = 0;
+  float y_IMU = 0;
+  
+  
   //auxilliary variables
   float v = 0; //robot speed
   float a = 0; //robot acceleration
   float d_center_old = 0;
+  float milage_old = 0;
   float v_old = 0;
   
   //distance from wheel to wheel
-  const float D_BASE = 55; //in cm
+  const float D_BASE = 56.5; //in cm
   
   // ================================================================
   // ===                      Encoder Counters                    ===
@@ -180,8 +186,8 @@ namespace Odometer {
     milage += d_center; //Keep track of total distance
     phi = (d_right - d_left) / D_BASE; //differential rotation 
 
-    v = (d_center - d_center_old)/ dt; // find the speed of the robot (cm/s) 
-    a = (v - v_old) / dt; //find the acceleration of the robot (cm/s^2)
+    v = (milage - milage_old)/ dt / 100; // find the speed of the robot (m/s) 
+    a = (v - v_old) / dt; //find the acceleration of the robot (m/s^2)
       
     //Only update when the robot is moving
     if (!(RPM1 == 0.0 && RPM2 == 0.0)) {
@@ -190,7 +196,9 @@ namespace Odometer {
    
       x = x + d_center * cos(theta); //update x
       y = y + d_center * sin(theta); //update y
-  
+
+      x_IMU = x_IMU + d_center * cos(-IMU::get_yaw()/180 * PI);
+      y_IMU = y_IMU + d_center * sin(-IMU::get_yaw()/180 * PI);
   
     }
   
@@ -199,6 +207,7 @@ namespace Odometer {
     oldMove1 = currentMove1;
     oldMove2 = currentMove2;
     d_center_old = d_center;
+    milage_old = milage;
     v_old = v;
   
   }
@@ -290,10 +299,36 @@ namespace Odometer {
     Serial.print('/');
     Serial.print(theta);
     Serial.print('/');
-    Serial.println(-IMU::get_yaw()/180 * PI);
+    Serial.print(-IMU::get_yaw());
+    Serial.print('/');
+    Serial.print(IMU::get_pitch());
+    Serial.print('/');
+    Serial.println(IMU::get_roll());
     
   
   }
+
+  //Prints encoder ticks instead of x, y, theta with yaw / pitch / roll
+  void print_raw(){
+    Serial.print(d_center);
+    Serial.print('/');
+    Serial.print(theta*180/PI);
+    Serial.print('/');
+    Serial.print(-IMU::get_yaw());
+    Serial.print('/');
+    Serial.print(IMU::get_pitch());
+    Serial.print('/');
+    Serial.println(IMU::get_roll());
+  }
+
+    String string_raw() {
+     
+    //TODO: convert state to string and write it maybe?
+    String state = String(d_center) +  "/" + String(theta) + "/" + String(-IMU::get_yaw()/180 * PI);
+    
+    return state;
+  }
+
 
    String string_state() {
      
@@ -302,5 +337,13 @@ namespace Odometer {
     
     return state;
   }
+
+  String both_state(){
+
+    String state = String(x) + "/" + String(y) + "/" + String(theta) + "/" + String(x_IMU) + "/" + String(y_IMU) + "/" +  String(-IMU::get_yaw()/180 * PI);
+
+    return state;
+  }
+
 
 }

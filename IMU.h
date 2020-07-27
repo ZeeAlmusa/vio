@@ -127,8 +127,8 @@ namespace IMU {
     if (fifoCount == 1024) {
   
       mpu.resetFIFO();
-
-  
+      
+      
     }
     else {
   
@@ -145,7 +145,7 @@ namespace IMU {
           fifoCount -= packetSize;
   
         }
-  
+        
         mpu.dmpGetQuaternion(&q, fifoBuffer);
         mpu.dmpGetGravity(&gravity, &q);
         mpu.dmpGetAccel(&aa, fifoBuffer);
