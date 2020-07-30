@@ -2,7 +2,7 @@
 """
 Created on Tue Jul 28 22:19:27 2020
 
-@author: Potato
+@author: Zee Almusa
 """
 
 import visual_odometer as viso
