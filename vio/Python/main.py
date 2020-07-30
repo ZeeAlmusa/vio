@@ -18,7 +18,11 @@ vo = viso.VisualOdometer(rover.current_state,rover, camera)
 vo.ground_truth = rover.odo_state
 vo.prev_ground_truth = rover.odo_state
 
-path = np.zeros((10000,2))
+camera_path = np.zeros((10000,2))
+odo_path = np.zeros((10000,2))
+IMU_path = np.zeros((10000,2))
+
+
 i = 0
 current_point = np.zeros(3)
 
@@ -46,20 +50,28 @@ while(vo.hasNextFrame()):
         if i % 5 == 0:
             vo.process_frame(rover)
         
-        current_point = vo.get_mono_coordinates()
-        path[i,0] = current_point[2]
-        path[i,1] = current_point[0]
-            
+     
+        camera_path[i,0] = vo.get_mono_coordinates()[2]
+        camera_path[i,1] = vo.get_mono_coordinates()[0]
         
+        odo_path[i,0] = rover.odo_state[0]
+        odo_path[i,1] = rover.odo_state[1]
+        
+        IMU_path[i,0] = rover.IMU_state[0]
+        IMU_path[i,1] = rover.IMU_state[1]
+        
+        #print out path just to check if everything is working fine
         print(rover.odo_state)
-        print(current_point)
         print("================")
             
         i = i + 1
         
         
-plt.scatter(path[:,0], path[:,1])        
-      
+plt.scatter(camera_path[:,0], camera_path[:,1], color = 'green' )        
+plt.scatter(odo_path[:,0], odo_path[:,1], color = 'red')  
+plt.scatter(IMU_path[:,0], IMU_path[:,1], color = 'blue')  
+
+
 # except Exception as e:
 #     rover.serial_port.close()
 #     vo.camera.release()
