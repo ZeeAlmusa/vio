@@ -19,10 +19,13 @@ class VisualOdometer(object):
                 ground_truth,
                 rover,
                 camera,
-                camera_intrinsics = np.array([[474.00206465 ,  0.  ,       324.64215794],
-                                              [  0.    ,    477.42451785, 261.96670994],
+                camera_intrinsics = np.array([[449.15960367 ,  0.  ,       324.94372014],
+                                              [  0.    ,    451.87560415, 261.4488552],
                                               [  0.    ,       0.     ,      1.        ]]),
-                lk_params=dict(winSize  = (21,21), criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01)), 
+                lk_params = dict(winSize=(21, 21),
+                     maxLevel = 30,
+                     criteria=(cv2.TERM_CRITERIA_EPS |
+                     cv2.TERM_CRITERIA_COUNT, 10, 0.03)), 
                 detector=cv2.FastFeatureDetector_create(threshold=25, nonmaxSuppression=True)):
         
         self.ground_truth = ground_truth
@@ -119,6 +122,40 @@ class VisualOdometer(object):
         return np.array([x.pt for x in p0], dtype=np.float32).reshape(-1, 1, 2)
     
     
+    def screen_points(p1, p2):
+        
+        #get the flow vectors
+        differential = p2 - p1
+        distance = np.sqrt(np.sum((differential)**2,axis=1))
+        
+        #take out small movement vectors (noise) and unusually long ones that make no sense
+        dist_mask = np.logical_and(distance > 5 , distance < 50)
+        p1 = p1[dist_mask]
+        p2 = p2[dist_mask]
+        differential = p2 - p1
+        #check the angle of the flow
+        angles = np.degrees(np.arctan2(differential[:,1], differential[:,0]))
+        
+        #make a histogram out of it
+        hist = np.histogram(angles,bins=36, range=(-360,360))
+       
+    
+        hist_counts = hist[0] #counts per bin
+        hist_edges = hist[1] #bin edges
+        hist_max = np.argmax(hist_counts) #bin index with max counts (dominant motion)
+        dominant_angles = hist_edges[hist_max:hist_max+2] #the bin edges of the max bin
+        all_indices = np.digitize(angles, hist_edges)-1 #Each points bin number
+        dominant_mask = all_indices == hist_max #create a boolean mask for the points that belong to maximum bin
+        
+        
+        #extract the dominant motion points
+        angles = angles[dominant_mask]
+        p1 = p1[dominant_mask]
+        p2 = p2[dominant_mask]
+    
+        
+        return p1, p2, angles
+    
     def visual_odometery(self, rover):
         
         if self.n_features < 2000:
@@ -129,11 +166,13 @@ class VisualOdometer(object):
         self.good_old = self.p0[st == 1]
         self.good_new = self.p1[st == 1]
         
+        self.good_old, self.good_new, _ = self.screen_points(self.good_old, self.good_new)
+        
         if self.id < 2:
-            E, _ = cv2.findEssentialMat(self.good_new, self.good_old, self.camera_instrinsics, cv2.RANSAC, 0.999, 1.0, None)
+            E, _ = cv2.findEssentialMat(self.good_old, self.good_new, self.camera_instrinsics, cv2.RANSAC, 0.999, 1.0, None)
             _, self.R, self.t, _ = cv2.recoverPose(E, self.good_old, self.good_new, self.camera_instrinsics)
         else:
-            E, _ = cv2.findEssentialMat(self.good_new, self.good_old, self.camera_instrinsics, cv2.RANSAC, 0.999, 1.0, None)
+            E, _ = cv2.findEssentialMat(self.good_old, self.good_new, self.camera_instrinsics, cv2.RANSAC, 0.999, 1.0, None)
             _, R, t, _ = cv2.recoverPose(E, self.good_old, self.good_new, self.camera_instrinsics)
             
             #insert methods to get ground_truth and update previous ground_truth
